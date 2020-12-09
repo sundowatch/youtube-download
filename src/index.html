@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Youtube Download</title>
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+  <link rel="stylesheet" href="assets/css/photon.min.css">
+  <link rel="stylesheet" href="assets/css/custom.css">
+  <link rel="shortcut icon" href="assets/images/youtube.png">
+
+  <!-- Javascript -->
+  <script src="assets/js/menu.js" charset="utf-8"></script>
+
+</head>
+
+<body>
+  <div class="window">
+
+    <!-- .toolbar-header sits at the top of your app -->
+    <header class="toolbar toolbar-header">
+
+      <div class="toolbar-actions">
+
+        <div class="btn-group">
+          <button class="btn btn-default">
+            <span class="icon icon-home"></span>
+          </button>
+          <button class="btn btn-default">
+            <span class="icon icon-arrows-ccw"></span>
+          </button>
+        </div>
+        <h1 class="title main-title">Youtube Download</h1>
+        <button class="btn btn-default pull-right" id="closeWindow">
+          <span class="icon icon-cancel"></span>
+        </button>
+        <button class="btn btn-default pull-right" id="minimizeWindow">
+          <span class="icon icon-minus"></span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Your app's content goes inside .window-content -->
+    <div class="window-content">
+      <div class="pane-group">
+        <div class="pane">
+          <div class="container">
+            <div class="row">
+              <div class="col-12 col-md-4 offset-md-4" style="margin-top: 30px;">
+                <input type="text" class="form-control" id="URL" placeholder="Paste the URL here">
+              </div>
+              <div class="col-md-4"></div>
+              <div class="col-12" style="justify-content: center; display: flex; margin-top: 15px;">
+                <input type="checkbox" class="form-control" id="saveAsAudio" style="width: 30px; height: 30px;">
+                <label for="saveAsAudio"
+                  style="font-size: 1.1rem; vertical-align: middle; padding-top: 4px; padding-left: 10px;">Save As
+                  MP3</label>
+              </div>
+              <button class="btn btn-positive btn-large" id="download"
+                style="display: block; margin: 0 auto; margin-top: 15px;">
+                Download
+              </button>
+              <div class="col-12" style="margin-top: 30px;">
+                <img id="imageField" src="" style="display: none; margin: 0 auto;">
+                <div id="nameField" style="text-align:center; font-size: 1rem; font-style:italic;" class="col-12"></div>
+              </div>
+              <div id="message" class="col-12" style="margin-top: 30px; text-align: center; font-size: 1.1rem; font-style:italic;">
+              
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="position: absolute; left: 5px; bottom: 5px; font-size: .7rem; font-style: italic;">by truncgil.com</div>
+  <script src="assets/js/basics.js" charset="utf-8"></script>
+  <script type="text/javascript">
+    const ytdl = require('ytdl-core');
+    const { dialog } = require('electron').remote;
+    const converter = require('video-converter');
+
+    $('#URL').on('input', function () {
+      let val = $(this).val();
+      let info = ytdl.getInfo(val);
+      info.then(ret => {
+        $('#imageField').css('display', 'block').attr('src', ret.videoDetails.thumbnail.thumbnails[0].url);
+        $('#nameField').html(ret.player_response.videoDetails.title);
+      });
+
+    });
+
+    $('#download').on('click', function () {
+      let saveAsAudio = $('#saveAsAudio').is(':checked');
+      let val = $('#URL').val();
+      console.log('Download clicked!');
+
+      var path = dialog.showOpenDialog({
+        properties: ['openDirectory']
+      });
+
+      path.then(dir => {
+        dir = dir.filePaths[0];
+
+        let info = ytdl.getInfo(val);
+
+
+
+        info.then(ret => {
+          let title = ret.player_response.videoDetails.title;
+          let a = ytdl(val)
+            .pipe(fs.createWriteStream(dir + '/' + title + '.mp4'));
+          if (saveAsAudio) {
+            setTimeout(() => {
+              if (fs.existsSync(dir + '/' + title + '.mp4')) {
+                converter.setFfmpegPath("ffmpeg.exe", function (err) {
+                  if (err) throw err;
+                });
+
+                // convert mp4 to mp3
+                converter.convert(dir + '/' + title + '.mp4', dir + '/' + title + '.mp3', function (err) {
+                  if (err) throw err;
+                  console.log("done");
+                  setTimeout(() => {
+                    fs.unlinkSync(dir + '/' + title + '.mp4');
+                    $('#message').html('Download Completed!');
+                  }, 5000);
+                });
+              }
+            }, 10000);
+            
+
+          }
+
+        });
+
+      });
+
+      //
+
+    });
+  </script>
+</body>
+
+</html>
